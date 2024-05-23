@@ -36,7 +36,7 @@ async def post(
 )
 async def query(db_session: DatabaseDependency) -> list[CategoriaOut]:
     categorias: list[CategoriaOut] = (await db_session.execute(select(CategoriaModel))).scalars().all()
-    
+
     return categorias
 
 
