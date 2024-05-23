@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import UUID4
@@ -69,8 +70,15 @@ async def post(
     status_code=status.HTTP_200_OK,
     response_model=list[AtletaGetAll],
 )
-async def query(db_session: DatabaseDependency) -> list[AtletaGetAll]:
-    atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
+async def query(db_session: DatabaseDependency, nome: Optional[str] = None, cpf: Optional[str] = None) -> list[AtletaGetAll]:
+    
+    if nome:
+        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel).filter_by(nome=nome))).scalars().all()
+    elif cpf:
+        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel).filter_by(cpf=cpf))).scalars().all()
+    else:
+        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
+    
     return atletas
 
 
