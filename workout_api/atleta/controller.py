@@ -31,6 +31,16 @@ async def post(
         select(CategoriaModel).filter_by(nome=categoria_nome))
     ).scalars().first()
     
+    atleta_mesmo_cpf = (await db_session.execute(
+        select(AtletaModel).filter_by(cpf=atleta_in.cpf))
+    ).scalars().first()
+
+    if atleta_mesmo_cpf:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail=f'Já existe um atleta cadastrado com o cpf: {atleta_in.cpf} .'
+        )
+
     if not categoria:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 

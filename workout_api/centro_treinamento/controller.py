@@ -19,6 +19,17 @@ async def post(
     db_session: DatabaseDependency, 
     centro_treinamento_in: CentroTreinamentoIn = Body(...)
 ) -> CentroTreinamentoOut:
+    
+    centro_mesmo_nome = (await db_session.execute(
+        select(CentroTreinamentoModel).filter_by(nome=centro_treinamento_in.nome))
+    ).scalars().first()
+
+    if centro_mesmo_nome:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail=f'Já existe uma centro cadastrado com o nome: {centro_treinamento_in.nome} .'
+        )
+
     centro_treinamento_out = CentroTreinamentoOut(id=uuid4(), **centro_treinamento_in.model_dump())
     centro_treinamento_model = CentroTreinamentoModel(**centro_treinamento_out.model_dump())
     
