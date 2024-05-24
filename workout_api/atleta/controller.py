@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import uuid4
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, FastAPI, HTTPException, status
 from pydantic import UUID4
 
 from workout_api.atleta.schemas import AtletaGetAll, AtletaIn, AtletaOut, AtletaUpdate
@@ -11,8 +11,12 @@ from workout_api.centro_treinamento.models import CentroTreinamentoModel
 
 from workout_api.contrib.dependencies import DatabaseDependency
 from sqlalchemy.future import select
+from fastapi_pagination import LimitOffsetPage, LimitOffsetParams, paginate
 
+
+app = FastAPI()
 router = APIRouter()
+app.include_router(router)
 
 @router.post(
     '/', 
@@ -70,26 +74,25 @@ async def post(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail='Ocorreu um erro ao inserir os dados no banco'
         )
-
     return atleta_out
-
 
 @router.get(
     '/', 
     summary='Consultar todos os Atletas',
     status_code=status.HTTP_200_OK,
-    response_model=list[AtletaGetAll],
+    response_model=LimitOffsetPage[AtletaGetAll],
 )
-async def query(db_session: DatabaseDependency, nome: Optional[str] = None, cpf: Optional[str] = None) -> list[AtletaGetAll]:
-    
+async def query(db_session: DatabaseDependency, nome: Optional[str] = None, cpf: Optional[str] = None) -> LimitOffsetPage[AtletaGetAll]:
+
     if nome:
-        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel).filter_by(nome=nome))).scalars().all()
+        atletas: LimitOffsetPage[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
     elif cpf:
-        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel).filter_by(cpf=cpf))).scalars().all()
+        atletas: LimitOffsetPage[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
     else:
-        atletas: list[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
+        atletas: LimitOffsetPage[AtletaGetAll] = (await db_session.execute(select(AtletaModel))).scalars().all()
+
     
-    return atletas
+    return paginate(atletas)
 
 
 @router.get(
@@ -157,3 +160,5 @@ async def delete(id: UUID4, db_session: DatabaseDependency) -> None:
     
     await db_session.delete(atleta)
     await db_session.commit()
+
+
